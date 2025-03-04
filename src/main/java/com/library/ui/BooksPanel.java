@@ -7,16 +7,24 @@ import com.library.service.DataService;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 public class BooksPanel extends JPanel {
     private final DataService dataService;
     private JTable booksTable;
+    private JTable borrowingHistoryTable;
     private DefaultTableModel tableModel;
+    private DefaultTableModel historyTableModel;
+    private SimpleDateFormat dateFormat;
     
     public BooksPanel(DataService dataService) {
         this.dataService = dataService;
+        this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         setupUI();
         refreshTable();
     }
@@ -24,8 +32,13 @@ public class BooksPanel extends JPanel {
     private void setupUI() {
         setLayout(new BorderLayout());
         
-        // Create table
-        String[] columns = {"ID", "Title", "Author", "ISBN", "Status"};
+        // Create main split pane
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        splitPane.setResizeWeight(0.6);
+        
+        // Create top panel with books table
+        JPanel topPanel = new JPanel(new BorderLayout());
+        String[] columns = {"ID", "Title", "Author", "ISBN", "Available/Total"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -34,22 +47,43 @@ public class BooksPanel extends JPanel {
         };
         booksTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(booksTable);
+        topPanel.add(scrollPane, BorderLayout.CENTER);
         
         // Create buttons panel
         JPanel buttonsPanel = new JPanel();
         JButton addButton = new JButton("Add Book");
         JButton editButton = new JButton("Edit Book");
         JButton deleteButton = new JButton("Delete Book");
-        JButton borrowButton = new JButton("Borrow/Return");
+        JButton borrowButton = new JButton("Borrow");
+        JButton returnButton = new JButton("Return");
+        JButton addCopyButton = new JButton("Add Copy");
         
         buttonsPanel.add(addButton);
         buttonsPanel.add(editButton);
         buttonsPanel.add(deleteButton);
         buttonsPanel.add(borrowButton);
+        buttonsPanel.add(returnButton);
+        buttonsPanel.add(addCopyButton);
+        topPanel.add(buttonsPanel, BorderLayout.SOUTH);
         
-        // Add components
-        add(scrollPane, BorderLayout.CENTER);
-        add(buttonsPanel, BorderLayout.SOUTH);
+        // Create bottom panel with borrowing history
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBorder(BorderFactory.createTitledBorder("Borrowing History"));
+        String[] historyColumns = {"Book Title", "User", "Borrow Date", "Return Date", "Status"};
+        historyTableModel = new DefaultTableModel(historyColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        borrowingHistoryTable = new JTable(historyTableModel);
+        JScrollPane historyScrollPane = new JScrollPane(borrowingHistoryTable);
+        bottomPanel.add(historyScrollPane, BorderLayout.CENTER);
+        
+        // Add panels to split pane
+        splitPane.setTopComponent(topPanel);
+        splitPane.setBottomComponent(bottomPanel);
+        add(splitPane);
         
         // Add button listeners
         addButton.addActionListener(e -> showAddBookDialog());
@@ -85,25 +119,61 @@ public class BooksPanel extends JPanel {
                     if (book.isAvailable()) {
                         showBorrowDialog(book);
                     } else {
-                        handleReturn(book);
+                        JOptionPane.showMessageDialog(this, "No copies available");
                     }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a book");
+            }
+        });
+
+        returnButton.addActionListener(e -> {
+            int selectedRow = booksTable.getSelectedRow();
+            if (selectedRow != -1) {
+                String bookId = (String) tableModel.getValueAt(selectedRow, 0);
+                Book book = getBookById(bookId);
+                if (book != null) {
+                    showReturnDialog(book);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a book");
+            }
+        });
+
+        addCopyButton.addActionListener(e -> {
+            int selectedRow = booksTable.getSelectedRow();
+            if (selectedRow != -1) {
+                String bookId = (String) tableModel.getValueAt(selectedRow, 0);
+                Book book = getBookById(bookId);
+                if (book != null) {
+                    book.setTotalCopies(book.getTotalCopies() + 1);
+                    dataService.updateBook(book);
                     refreshTable();
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Please select a book");
             }
         });
+
+        // Add selection listener for history table
+        booksTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                refreshHistoryTable();
+            }
+        });
     }
-    
+
     private void showAddBookDialog() {
         JTextField titleField = new JTextField();
         JTextField authorField = new JTextField();
         JTextField isbnField = new JTextField();
+        JSpinner copiesSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
         
         Object[] message = {
             "Title:", titleField,
             "Author:", authorField,
-            "ISBN:", isbnField
+            "ISBN:", isbnField,
+            "Copies:", copiesSpinner
         };
         
         int option = JOptionPane.showConfirmDialog(this, message, "Add New Book", 
@@ -112,11 +182,12 @@ public class BooksPanel extends JPanel {
         if (option == JOptionPane.OK_OPTION) {
             String id = UUID.randomUUID().toString();
             Book book = new Book(id, titleField.getText(), authorField.getText(), isbnField.getText());
+            book.setTotalCopies((Integer) copiesSpinner.getValue());
             dataService.addBook(book);
             refreshTable();
         }
     }
-    
+
     private void showEditBookDialog(Book book) {
         if (book == null) return;
         
@@ -156,21 +227,6 @@ public class BooksPanel extends JPanel {
                 .orElse(null);
     }
     
-    private void refreshTable() {
-        tableModel.setRowCount(0);
-        List<Book> books = dataService.getAllBooks();
-        for (Book book : books) {
-            Object[] row = {
-                book.getId(),
-                book.getTitle(),
-                book.getAuthor(),
-                book.getIsbn(),
-                book.isAvailable() ? "Available" : "Borrowed"
-            };
-            tableModel.addRow(row);
-        }
-    }
-
     private void showBorrowDialog(Book book) {
         List<User> users = dataService.getAllUsers();
         if (users.isEmpty()) {
@@ -193,50 +249,97 @@ public class BooksPanel extends JPanel {
 
         if (option == JOptionPane.OK_OPTION) {
             User selectedUser = (User) userComboBox.getSelectedItem();
-            book.setAvailable(false);
-            book.setBorrowerId(selectedUser.getId());
+            book.borrowBook(selectedUser);
             selectedUser.borrowBook(book.getId());
             dataService.updateBook(book);
             dataService.updateUser(selectedUser);
             refreshTable();
-            // Notify UsersPanel to refresh
+            refreshHistoryTable();
             firePropertyChange("REFRESH_USERS", null, null);
             JOptionPane.showMessageDialog(this,
                 "Book borrowed successfully by " + selectedUser.getName());
         }
     }
 
-    private void handleReturn(Book book) {
-        User user = null;
-        for (User u : dataService.getAllUsers()) {
-            if (u.getId().equals(book.getBorrowerId())) {
-                user = u;
-                break;
+    private void showReturnDialog(Book book) {
+        List<Book.BorrowRecord> activeRecords = new ArrayList<>();
+        for (Book.BorrowRecord record : book.getBorrowRecords()) {
+            if (!record.isReturned()) {
+                activeRecords.add(record);
             }
         }
 
-        if (user != null) {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "Return book borrowed by " + user.getName() + "?",
-                "Return Book",
-                JOptionPane.YES_NO_OPTION);
-                
-            if (confirm == JOptionPane.YES_OPTION) {
-                book.setAvailable(true);
-                book.setBorrowerId(null);
+        if (activeRecords.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "No active borrowers for this book",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String[] borrowers = activeRecords.stream()
+            .map(record -> record.getUserName())
+            .toArray(String[]::new);
+
+        String selectedBorrower = (String) JOptionPane.showInputDialog(
+            this,
+            "Select user returning the book:",
+            "Return Book",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            borrowers,
+            borrowers[0]);
+
+        if (selectedBorrower != null) {
+            Book.BorrowRecord record = activeRecords.get(Arrays.asList(borrowers).indexOf(selectedBorrower));
+            User user = dataService.getUserById(record.getUserId());
+            if (user != null) {
+                book.returnBook(user.getId());
                 user.returnBook(book.getId());
                 dataService.updateBook(book);
                 dataService.updateUser(user);
                 refreshTable();
-                // Notify UsersPanel to refresh
+                refreshHistoryTable();
                 firePropertyChange("REFRESH_USERS", null, null);
                 JOptionPane.showMessageDialog(this, "Book returned successfully");
             }
-        } else {
-            JOptionPane.showMessageDialog(this,
-                "Error: Borrower information not found",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void refreshHistoryTable() {
+        historyTableModel.setRowCount(0);
+        int selectedRow = booksTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String bookId = (String) tableModel.getValueAt(selectedRow, 0);
+            Book book = getBookById(bookId);
+            if (book != null) {
+                for (Book.BorrowRecord record : book.getBorrowRecords()) {
+                    Object[] row = {
+                        book.getTitle(),
+                        record.getUserName(),
+                        dateFormat.format(new Date(record.getBorrowDate())),
+                        record.isReturned() ? dateFormat.format(new Date(record.getReturnDate())) : "Not returned",
+                        record.isReturned() ? "Returned" : "Borrowed"
+                    };
+                    historyTableModel.addRow(row);
+                }
+            }
+        }
+    }
+
+    private void refreshTable() {
+        tableModel.setRowCount(0);
+        List<Book> books = dataService.getAllBooks();
+        for (Book book : books) {
+            Object[] row = {
+                book.getId(),
+                book.getTitle(),
+                book.getAuthor(),
+                book.getIsbn(),
+                book.getAvailableCopies() + "/" + book.getTotalCopies()
+            };
+            tableModel.addRow(row);
+        }
+        refreshHistoryTable();
     }
 } 

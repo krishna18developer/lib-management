@@ -15,7 +15,35 @@ public class DataService {
     private static final String DATA_DIR = "data";
     private static final String BOOKS_FILE = DATA_DIR + "/books.json";
     private static final String USERS_FILE = DATA_DIR + "/users.json";
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .registerTypeAdapter(Book.class, new com.google.gson.JsonDeserializer<Book>() {
+                @Override
+                public Book deserialize(com.google.gson.JsonElement json, Type type, 
+                        com.google.gson.JsonDeserializationContext context) throws com.google.gson.JsonParseException {
+                    com.google.gson.JsonObject jsonObject = json.getAsJsonObject();
+                    
+                    String id = jsonObject.get("id").getAsString();
+                    String title = jsonObject.get("title").getAsString();
+                    String author = jsonObject.get("author").getAsString();
+                    String isbn = jsonObject.get("isbn").getAsString();
+                    
+                    Book book = new Book(id, title, author, isbn);
+                    
+                    if (jsonObject.has("totalCopies")) {
+                        book.setTotalCopies(jsonObject.get("totalCopies").getAsInt());
+                    }
+                    
+                    if (jsonObject.has("borrowRecords")) {
+                        Type recordListType = new TypeToken<List<Book.BorrowRecord>>(){}.getType();
+                        List<Book.BorrowRecord> records = context.deserialize(jsonObject.get("borrowRecords"), recordListType);
+                        book.getBorrowRecords().addAll(records);
+                    }
+                    
+                    return book;
+                }
+            })
+            .create();
     
     private List<Book> books;
     private List<User> users;
@@ -116,6 +144,13 @@ public class DataService {
     public User getUserByEmail(String email) {
         return users.stream()
                 .filter(user -> user.getEmail().equals(email))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    public User getUserById(String id) {
+        return users.stream()
+                .filter(user -> user.getId().equals(id))
                 .findFirst()
                 .orElse(null);
     }

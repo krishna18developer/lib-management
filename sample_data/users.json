@@ -4,13 +4,20 @@
     "name": "John Doe",
     "email": "john@example.com",
     "password": "password123",
-    "borrowedBooks": []
+    "borrowedBooks": ["b3"]
   },
   {
     "id": "u2",
     "name": "Jane Smith",
     "email": "jane@example.com",
     "password": "password456",
+    "borrowedBooks": ["b1"]
+  },
+  {
+    "id": "u3",
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "password": "password789",
     "borrowedBooks": []
   }
 ] 

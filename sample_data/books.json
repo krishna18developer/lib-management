@@ -4,23 +4,44 @@
     "title": "The Great Gatsby",
     "author": "F. Scott Fitzgerald",
     "isbn": "978-0743273565",
-    "isAvailable": true,
-    "borrowerId": null
+    "totalCopies": 3,
+    "borrowRecords": [
+      {
+        "userId": "u1",
+        "userName": "John Doe",
+        "borrowDate": 1709548800000,
+        "returnDate": 1709721600000,
+        "isReturned": true
+      },
+      {
+        "userId": "u2",
+        "userName": "Jane Smith",
+        "borrowDate": 1709635200000,
+        "isReturned": false
+      }
+    ]
   },
   {
     "id": "b2",
     "title": "To Kill a Mockingbird",
     "author": "Harper Lee",
     "isbn": "978-0446310789",
-    "isAvailable": true,
-    "borrowerId": null
+    "totalCopies": 2,
+    "borrowRecords": []
   },
   {
     "id": "b3",
     "title": "1984",
     "author": "George Orwell",
     "isbn": "978-0451524935",
-    "isAvailable": true,
-    "borrowerId": null
+    "totalCopies": 4,
+    "borrowRecords": [
+      {
+        "userId": "u1",
+        "userName": "John Doe",
+        "borrowDate": 1709462400000,
+        "isReturned": false
+      }
+    ]
   }
 ] 
