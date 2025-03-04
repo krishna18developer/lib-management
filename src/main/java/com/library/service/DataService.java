@@ -12,14 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DataService {
-    private static final String BOOKS_FILE = "books.json";
-    private static final String USERS_FILE = "users.json";
+    private static final String DATA_DIR = "data";
+    private static final String BOOKS_FILE = DATA_DIR + "/books.json";
+    private static final String USERS_FILE = DATA_DIR + "/users.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     
     private List<Book> books;
     private List<User> users;
     
     public DataService() {
+        // Create data directory if it doesn't exist
+        new File(DATA_DIR).mkdirs();
         loadData();
     }
     

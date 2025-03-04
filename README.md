@@ -3,10 +3,10 @@
 A Project Based Learning (PBL) implementation of a Library Management System.
 
 ## Student Information
-- **Name:** Krishna Teja
-- **Roll Number:** 21BCE1234
+- **Name:** Taraka Srinivas
+- **Roll Number:** 23EG109A34
 - **Course:** Object Oriented Programming
-- **Institution:** VIT University
+- **Institution:** Anurag University
 
 ## Features
 
@@ -33,6 +33,20 @@ A Project Based Learning (PBL) implementation of a Library Management System.
    ./run.sh
    ```
 
+   ```bash
+   .\run.bat
+   ```
+   
+   To run without rebuilding:
+   ```bash
+   ./run.sh --no-build
+   ```
+   
+   To run without rebuilding:
+   ```bash
+   .\run.bat --no-build
+   ```
+
 Alternatively, you can build and run manually:
 
 1. Build the project:
@@ -46,21 +60,17 @@ Alternatively, you can build and run manually:
 
 ## Sample Data
 
-The `sample_data` directory contains example JSON files that can be copied to the application's root directory:
+Sample data is automatically copied to the `data` directory when running the application for the first time. The `sample_data` directory contains:
 - `books.json`: Sample book records
 - `users.json`: Sample user records
 
-To use the sample data:
-1. Copy the files from `sample_data` to the application's root directory
-2. Start the application
-
 ## Data Storage
 
-The application stores all data in JSON files:
-- `books.json`: Contains all book records
-- `users.json`: Contains all user records
+The application stores all data in JSON files in the `data` directory:
+- `data/books.json`: Contains all book records
+- `data/users.json`: Contains all user records
 
-These files are automatically created in the application's running directory when needed.
+These files are automatically created when needed.
 
 ## Usage
 
