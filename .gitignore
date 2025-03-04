@@ -40,5 +40,5 @@ dependency-reduced-pom.xml
 .project
 .classpath
 
-# JSON data files
-*.json 
+# Data files
+data/

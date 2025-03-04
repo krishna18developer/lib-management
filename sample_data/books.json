@@ -1,0 +1,26 @@
+[
+  {
+    "id": "b1",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "isbn": "978-0743273565",
+    "isAvailable": true,
+    "borrowerId": null
+  },
+  {
+    "id": "b2",
+    "title": "To Kill a Mockingbird",
+    "author": "Harper Lee",
+    "isbn": "978-0446310789",
+    "isAvailable": true,
+    "borrowerId": null
+  },
+  {
+    "id": "b3",
+    "title": "1984",
+    "author": "George Orwell",
+    "isbn": "978-0451524935",
+    "isAvailable": true,
+    "borrowerId": null
+  }
+] 
