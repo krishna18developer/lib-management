@@ -6,10 +6,12 @@ import com.library.service.DataService;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.UUID;
 
-public class UsersPanel extends JPanel {
+public class UsersPanel extends JPanel implements PropertyChangeListener {
     private final DataService dataService;
     private JTable usersTable;
     private DefaultTableModel tableModel;
@@ -18,6 +20,13 @@ public class UsersPanel extends JPanel {
         this.dataService = dataService;
         setupUI();
         refreshTable();
+    }
+    
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        if ("REFRESH_USERS".equals(evt.getPropertyName())) {
+            refreshTable();
+        }
     }
     
     private void setupUI() {

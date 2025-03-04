@@ -1,6 +1,7 @@
 package com.library.ui;
 
 import com.library.model.Book;
+import com.library.model.User;
 import com.library.service.DataService;
 
 import javax.swing.*;
@@ -72,6 +73,24 @@ public class BooksPanel extends JPanel {
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Please select a book to delete");
+            }
+        });
+
+        borrowButton.addActionListener(e -> {
+            int selectedRow = booksTable.getSelectedRow();
+            if (selectedRow != -1) {
+                String bookId = (String) tableModel.getValueAt(selectedRow, 0);
+                Book book = getBookById(bookId);
+                if (book != null) {
+                    if (book.isAvailable()) {
+                        showBorrowDialog(book);
+                    } else {
+                        handleReturn(book);
+                    }
+                    refreshTable();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a book");
             }
         });
     }
@@ -149,6 +168,75 @@ public class BooksPanel extends JPanel {
                 book.isAvailable() ? "Available" : "Borrowed"
             };
             tableModel.addRow(row);
+        }
+    }
+
+    private void showBorrowDialog(Book book) {
+        List<User> users = dataService.getAllUsers();
+        if (users.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "No users registered in the system",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JComboBox<User> userComboBox = new JComboBox<>(users.toArray(new User[0]));
+        Object[] message = {
+            "Select user:", userComboBox
+        };
+
+        int option = JOptionPane.showConfirmDialog(this,
+            message,
+            "Borrow Book",
+            JOptionPane.OK_CANCEL_OPTION);
+
+        if (option == JOptionPane.OK_OPTION) {
+            User selectedUser = (User) userComboBox.getSelectedItem();
+            book.setAvailable(false);
+            book.setBorrowerId(selectedUser.getId());
+            selectedUser.borrowBook(book.getId());
+            dataService.updateBook(book);
+            dataService.updateUser(selectedUser);
+            refreshTable();
+            // Notify UsersPanel to refresh
+            firePropertyChange("REFRESH_USERS", null, null);
+            JOptionPane.showMessageDialog(this,
+                "Book borrowed successfully by " + selectedUser.getName());
+        }
+    }
+
+    private void handleReturn(Book book) {
+        User user = null;
+        for (User u : dataService.getAllUsers()) {
+            if (u.getId().equals(book.getBorrowerId())) {
+                user = u;
+                break;
+            }
+        }
+
+        if (user != null) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Return book borrowed by " + user.getName() + "?",
+                "Return Book",
+                JOptionPane.YES_NO_OPTION);
+                
+            if (confirm == JOptionPane.YES_OPTION) {
+                book.setAvailable(true);
+                book.setBorrowerId(null);
+                user.returnBook(book.getId());
+                dataService.updateBook(book);
+                dataService.updateUser(user);
+                refreshTable();
+                // Notify UsersPanel to refresh
+                firePropertyChange("REFRESH_USERS", null, null);
+                JOptionPane.showMessageDialog(this, "Book returned successfully");
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Error: Borrower information not found",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 } 

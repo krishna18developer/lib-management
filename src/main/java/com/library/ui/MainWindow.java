@@ -11,6 +11,8 @@ public class MainWindow extends JFrame {
     private final DataService dataService;
     private User currentUser;
     private JTabbedPane tabbedPane;
+    private BooksPanel booksPanel;
+    private UsersPanel usersPanel;
     
     public MainWindow() {
         this.dataService = new DataService();
@@ -26,9 +28,16 @@ public class MainWindow extends JFrame {
         // Create main tabbed pane
         tabbedPane = new JTabbedPane();
         
+        // Create panels
+        booksPanel = new BooksPanel(dataService);
+        usersPanel = new UsersPanel(dataService);
+        
+        // Add property change listener
+        booksPanel.addPropertyChangeListener(usersPanel);
+        
         // Add tabs
-        tabbedPane.addTab("Books", new BooksPanel(dataService));
-        tabbedPane.addTab("Users", new UsersPanel(dataService));
+        tabbedPane.addTab("Books", booksPanel);
+        tabbedPane.addTab("Users", usersPanel);
         
         // Add to frame
         add(tabbedPane);
