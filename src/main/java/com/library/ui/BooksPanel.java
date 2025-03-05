@@ -6,6 +6,8 @@ import com.library.service.DataService;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -21,6 +23,8 @@ public class BooksPanel extends JPanel {
     private DefaultTableModel tableModel;
     private DefaultTableModel historyTableModel;
     private SimpleDateFormat dateFormat;
+    private JTextField searchField;
+    private JComboBox<String> filterComboBox;
     
     public BooksPanel(DataService dataService) {
         this.dataService = dataService;
@@ -38,6 +42,31 @@ public class BooksPanel extends JPanel {
         
         // Create top panel with books table
         JPanel topPanel = new JPanel(new BorderLayout());
+        
+        // Add search panel
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchField = new JTextField(20);
+        filterComboBox = new JComboBox<>(new String[]{"All Books", "Available Only", "Currently Borrowed"});
+        JLabel searchLabel = new JLabel("Search:");
+        JLabel filterLabel = new JLabel("Filter:");
+        
+        searchPanel.add(searchLabel);
+        searchPanel.add(searchField);
+        searchPanel.add(Box.createHorizontalStrut(20));
+        searchPanel.add(filterLabel);
+        searchPanel.add(filterComboBox);
+        
+        // Add search listeners
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) { applyFilters(); }
+            public void removeUpdate(DocumentEvent e) { applyFilters(); }
+            public void insertUpdate(DocumentEvent e) { applyFilters(); }
+        });
+        
+        filterComboBox.addActionListener(e -> applyFilters());
+        
+        topPanel.add(searchPanel, BorderLayout.NORTH);
+        
         String[] columns = {"ID", "Title", "Author", "ISBN", "Available/Total"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -327,19 +356,36 @@ public class BooksPanel extends JPanel {
         }
     }
 
-    private void refreshTable() {
+    private void applyFilters() {
         tableModel.setRowCount(0);
-        List<Book> books = dataService.getAllBooks();
-        for (Book book : books) {
-            Object[] row = {
-                book.getId(),
-                book.getTitle(),
-                book.getAuthor(),
-                book.getIsbn(),
-                book.getAvailableCopies() + "/" + book.getTotalCopies()
-            };
-            tableModel.addRow(row);
+        String searchText = searchField.getText().toLowerCase();
+        String filter = (String) filterComboBox.getSelectedItem();
+        
+        for (Book book : dataService.getAllBooks()) {
+            boolean matchesSearch = searchText.isEmpty() ||
+                book.getTitle().toLowerCase().contains(searchText) ||
+                book.getAuthor().toLowerCase().contains(searchText) ||
+                book.getIsbn().toLowerCase().contains(searchText);
+                
+            boolean matchesFilter = "All Books".equals(filter) ||
+                ("Available Only".equals(filter) && book.getAvailableCopies() > 0) ||
+                ("Currently Borrowed".equals(filter) && book.getAvailableCopies() < book.getTotalCopies());
+                
+            if (matchesSearch && matchesFilter) {
+                Object[] row = {
+                    book.getId(),
+                    book.getTitle(),
+                    book.getAuthor(),
+                    book.getIsbn(),
+                    book.getAvailableCopies() + "/" + book.getTotalCopies()
+                };
+                tableModel.addRow(row);
+            }
         }
+    }
+
+    private void refreshTable() {
+        applyFilters();
         refreshHistoryTable();
     }
 } 
