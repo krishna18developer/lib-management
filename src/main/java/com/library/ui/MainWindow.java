@@ -6,11 +6,14 @@ import com.library.service.DataService;
 
 import javax.swing.*;
 import java.awt.*;
+import java.beans.PropertyChangeListener;
 
 public class MainWindow extends JFrame {
     private final DataService dataService;
     private User currentUser;
     private JTabbedPane tabbedPane;
+    private BooksPanel booksPanel;
+    private UsersPanel usersPanel;
     
     public MainWindow() {
         this.dataService = new DataService();
@@ -26,9 +29,20 @@ public class MainWindow extends JFrame {
         // Create main tabbed pane
         tabbedPane = new JTabbedPane();
         
+        // Create panels
+        booksPanel = new BooksPanel(dataService);
+        usersPanel = new UsersPanel(dataService);
+        StatsPanel statsPanel = new StatsPanel(dataService);
+        
+        // Add property change listeners
+        PropertyChangeListener statsListener = (PropertyChangeListener) statsPanel;
+        booksPanel.addPropertyChangeListener(statsListener);
+        usersPanel.addPropertyChangeListener(statsListener);
+        
         // Add tabs
-        tabbedPane.addTab("Books", new BooksPanel(dataService));
-        tabbedPane.addTab("Users", new UsersPanel(dataService));
+        tabbedPane.addTab("Books", booksPanel);
+        tabbedPane.addTab("Users", usersPanel);
+        tabbedPane.addTab("Statistics", statsPanel);
         
         // Add to frame
         add(tabbedPane);
